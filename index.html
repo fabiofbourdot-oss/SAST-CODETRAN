@@ -1,0 +1,1643 @@
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistema de Recolhimento de Sinistros de Trânsito</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #eef3f8;
+            --surface: rgba(255, 255, 255, 0.94);
+            --surface-2: #f8fbfe;
+            --primary: #123a63;
+            --primary-2: #1d5f98;
+            --accent: #f59f18;
+            --success: #1f9d61;
+            --danger: #c44536;
+            --whatsapp: #22c55e;
+            --text: #18324a;
+            --muted: #65809c;
+            --border: #d7e2ee;
+            --shadow: 0 18px 50px rgba(10, 33, 61, 0.12);
+            --radius: 20px;
+            --radius-sm: 14px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(29, 95, 152, 0.14), transparent 28%),
+                radial-gradient(circle at top right, rgba(245, 159, 24, 0.14), transparent 24%),
+                linear-gradient(180deg, #f5f8fc 0%, var(--bg) 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0f2e4d 0%, #1a4f7f 100%);
+            color: #fff;
+            padding: 22px 16px 18px;
+            box-shadow: 0 10px 30px rgba(15, 46, 77, 0.22);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+
+        .header-top {
+            max-width: 860px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.16);
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .header-text h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .header-text p {
+            margin: 5px 0 0;
+            color: rgba(255,255,255,0.82);
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 22px 14px 36px;
+        }
+
+        .screen { display: none; animation: fadeIn .25s ease; }
+        .screen.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-card,
+        .card,
+        .boletim-impresso,
+        .historico-item {
+            background: var(--surface);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.7);
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card {
+            border-radius: 28px;
+            padding: 28px;
+            margin-bottom: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -50px;
+            top: -55px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245, 159, 24, 0.18), transparent 65%);
+        }
+
+        .hero-card h2 {
+            margin: 0 0 10px;
+            font-size: 28px;
+            color: var(--primary);
+            line-height: 1.2;
+            max-width: 520px;
+        }
+
+        .hero-card p {
+            margin: 0 0 10px;
+            font-size: 16px;
+            color: #47637e;
+            max-width: 620px;
+            line-height: 1.6;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .hero-stat {
+            background: rgba(18, 58, 99, 0.05);
+            border: 1px solid rgba(18, 58, 99, 0.08);
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .hero-stat strong {
+            display: block;
+            color: var(--primary);
+            font-size: 13px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .hero-stat span {
+            font-size: 14px;
+            color: #4a6178;
+            line-height: 1.5;
+        }
+
+        .card {
+            border-radius: var(--radius);
+            padding: 22px;
+            margin-bottom: 18px;
+        }
+
+        .card h2 {
+            margin: 0 0 18px;
+            font-size: 17px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e7eef6;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .section-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(29, 95, 152, 0.08);
+            color: var(--primary-2);
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 14px;
+        }
+
+        .info-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(245, 159, 24, 0.12);
+            color: #9a6200;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #244560;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            border-radius: 14px;
+            padding: 14px 15px;
+            font-size: 15px;
+            color: var(--text);
+            transition: .2s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: rgba(29, 95, 152, 0.42);
+            box-shadow: 0 0 0 4px rgba(29, 95, 152, 0.10);
+            background: #fff;
+        }
+
+        textarea { resize: vertical; min-height: 125px; }
+
+        .input-com-acao {
+            position: relative;
+        }
+        .input-com-acao input {
+            padding-right: 56px;
+        }
+        .btn-gps {
+            position: absolute;
+            top: 50%;
+            right: 6px;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 6px 14px rgba(18, 58, 99, 0.22);
+        }
+        .btn-gps:disabled {
+            opacity: .65;
+            cursor: progress;
+        }
+        .gps-status {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--muted);
+            min-height: 16px;
+        }
+        .gps-status.erro { color: var(--danger); }
+        .gps-status.ok { color: var(--success); }
+
+        /* Toggle Vítima / Sem Vítima */
+        .vitima-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .vitima-opcao {
+            position: relative;
+            cursor: pointer;
+        }
+        .vitima-opcao input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .vitima-opcao .box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            border: 2px solid var(--border);
+            background: var(--surface-2);
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--muted);
+            transition: .2s ease;
+        }
+        .vitima-opcao input:checked + .box {
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+        }
+        .vitima-opcao.com input:checked + .box {
+            background: linear-gradient(135deg, #a93025 0%, var(--danger) 100%);
+        }
+        .vitima-opcao.sem input:checked + .box {
+            background: linear-gradient(135deg, #168553 0%, var(--success) 100%);
+        }
+
+        /* Fotos */
+        .foto-upload {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .foto-upload .btn-foto {
+            flex: 1;
+            min-width: 140px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 8px 18px rgba(18, 58, 99, 0.18);
+        }
+        .foto-upload input[type=file] { display: none; }
+        .fotos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .foto-item {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #f4f8fc;
+            aspect-ratio: 1 / 1;
+        }
+        .foto-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .foto-item .btn-remover-foto {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(196, 69, 54, 0.94);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+        .fotos-status {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            padding: 15px 16px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+            color: #fff;
+            box-shadow: 0 12px 25px rgba(18, 58, 99, 0.22);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #168553 0%, var(--success) 100%);
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(31, 157, 97, 0.22);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #a93025 0%, var(--danger) 100%);
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(196, 69, 54, 0.22);
+        }
+
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #139c45 0%, var(--whatsapp) 100%);
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(34, 197, 94, 0.22);
+        }
+
+        .btn-gray {
+            background: linear-gradient(135deg, #71859b 0%, #8fa1b4 100%);
+            color: #fff;
+            box-shadow: 0 10px 22px rgba(94, 114, 135, 0.18);
+        }
+
+        .btn-outline {
+            background: #fff;
+            color: var(--text);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 18px rgba(18, 58, 99, 0.08);
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .question-box {
+            text-align: center;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        .question-box h2 {
+            justify-content: center;
+            border: none;
+            padding-bottom: 0;
+            font-size: 22px;
+            text-transform: none;
+            letter-spacing: 0;
+            margin-bottom: 10px;
+        }
+
+        .question-box p {
+            margin: 0 auto 12px;
+            max-width: 520px;
+            color: #5f7891;
+            line-height: 1.6;
+        }
+
+        .boletim-impresso {
+            border-radius: 22px;
+            padding: 22px;
+            font-family: Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            border: 1px solid #dde8f3;
+            white-space: pre-wrap;
+            margin-bottom: 16px;
+            color: #16324a;
+        }
+
+        .historico-item {
+            padding: 18px;
+            border-radius: 18px;
+            margin-bottom: 14px;
+            border: 1px solid #e0ebf5;
+        }
+
+        .historico-data {
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .historico-local {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            width: auto;
+            padding: 10px 13px;
+            font-size: 12px;
+            border-radius: 12px;
+            margin: 0;
+        }
+
+        .envolvidos-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .tab-envolvido {
+            display: flex;
+            align-items: center;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #f2f7fb;
+            border: 1px solid #d5e2ee;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .tab-envolvido button {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .tab-link {
+            padding: 11px 14px;
+            color: var(--primary);
+        }
+
+        .tab-link.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+            color: #fff;
+        }
+
+        .tab-close {
+            padding: 11px 13px;
+            color: var(--danger);
+            border-left: 1px solid #d5e2ee !important;
+            font-size: 14px;
+        }
+
+        .tab-close:hover {
+            background: #fff2f0;
+        }
+
+        .hidden { display: none !important; }
+
+        .top-note {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .subtext {
+            font-size: 14px;
+            color: #637e97;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 640px) {
+            .header-top { align-items: flex-start; }
+            .hero-grid, .row, .btn-row { grid-template-columns: 1fr; }
+            .hero-card { padding: 22px; }
+            .hero-card h2 { font-size: 24px; }
+            .card, .boletim-impresso, .historico-item { padding: 18px; }
+            .action-row { flex-direction: column; }
+            .action-row .btn-small { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <div class="logo-badge">🚔</div>
+            <div class="header-text">
+                <h1>Sistema de Recolhimento de Sinistros de Trânsito</h1>
+                <p>Registro rápido, histórico organizado e emissão prática do boletim.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="screen-home" class="screen active">
+            <div class="hero-card">
+                <div class="section-badge">Início do sistema</div>
+                <h2>Sistema de Recolhimento de Sinistros de Trânsito</h2>
+                <p>Bem vindo ao sistema. Selecione uma opção abaixo para começar e registrar a ocorrência com mais clareza, agilidade e organização.</p>
+                <div class="hero-grid">
+                    <div class="hero-stat">
+                        <strong>Cadastro rápido</strong>
+                        <span>Fluxo por etapas para facilitar o preenchimento do boletim.</span>
+                    </div>
+                    <div class="hero-stat">
+                        <strong>Envolvidos em abas</strong>
+                        <span>Controle individual de cada parte envolvida, sem empilhamento.</span>
+                    </div>
+                    <div class="hero-stat">
+                        <strong>Histórico salvo</strong>
+                        <span>Consulta, visualização, edição e compartilhamento do B.O.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="iniciarNovoBO()">Novo B.O</button>
+                <button class="btn btn-outline" onclick="abrirHistorico()">Abrir Histórico</button>
+            </div>
+        </div>
+
+        <div id="screen-geral" class="screen">
+            <div class="card">
+                <div class="top-note">
+                    <div class="section-badge">Etapa 1</div>
+                    <div class="subtext">Preencha os dados principais do ocorrido.</div>
+                </div>
+                <h2>📍 Dados do Ocorrido</h2>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="dataSinistro">
+                    </div>
+                    <div class="form-group">
+                        <label>Hora</label>
+                        <input type="time" id="horaSinistro">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Sinistro do tipo</label>
+                    <select id="tipoSinistro">
+                        <option value="">Selecione</option>
+                        <option value="Colisão">Colisão</option>
+                        <option value="Choque">Choque</option>
+                        <option value="Atropelamento">Atropelamento</option>
+                        <option value="Queda">Queda</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Local (Via/Endereço)</label>
+                    <div class="input-com-acao">
+                        <input type="text" id="localSinistro" placeholder="Endereço completo do sinistro">
+                        <button type="button" class="btn-gps" id="btnGPS" onclick="preencherEnderecoGPS()" title="Usar GPS para preencher o endereço">📍</button>
+                    </div>
+                    <div class="gps-status" id="gpsStatus"></div>
+                </div>
+                <div class="form-group">
+                    <label>Agentes (Guarnição)</label>
+                    <input type="text" id="agentesSinistro" placeholder="Nome ou matrícula dos agentes responsáveis">
+                </div>
+                <div class="form-group">
+                    <label>Sinistro com vítima?</label>
+                    <div class="vitima-toggle">
+                        <label class="vitima-opcao com">
+                            <input type="radio" name="comVitima" value="sim">
+                            <div class="box">🚨 Com vítima</div>
+                        </label>
+                        <label class="vitima-opcao sem">
+                            <input type="radio" name="comVitima" value="nao">
+                            <div class="box">✅ Sem vítima</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-gray" onclick="mostrarTela('screen-home')">Voltar</button>
+                <button class="btn btn-primary" onclick="btnAvancarGeral()">Avançar</button>
+            </div>
+        </div>
+
+        <div id="screen-envolvido" class="screen">
+            <div class="card">
+                <div class="top-note">
+                    <div class="section-badge">Etapa 2</div>
+                    <div class="subtext">Cadastre cada envolvido separadamente nas abas abaixo.</div>
+                </div>
+                <h2>🚗 Envolvidos</h2>
+                <div class="envolvidos-tabs" id="tabsEnvolvidos"></div>
+                <span class="info-chip">Abas separadas por envolvido com exclusão individual</span>
+                <h2 id="tituloEnvolvido">ENVOLVIDO 1</h2>
+
+                <div class="form-group">
+                    <label>Tipo de Envolvido</label>
+                    <select id="tipoEnvolvido" onchange="verificarTipo()">
+                        <option value="Veículo">Veículo</option>
+                        <option value="Motoneta">Motoneta</option>
+                        <option value="Ciclomotor">Ciclomotor</option>
+                        <option value="Autopropelido">Autopropelido</option>
+                        <option value="Ciclista">Ciclista</option>
+                        <option value="Pedestre">Pedestre</option>
+                        <option value="Reboque">Reboque</option>
+                        <option value="Semi-reboque">Semi-reboque</option>
+                    </select>
+                </div>
+
+                <div id="divDadosVeiculo">
+                    <div class="row" id="linhaPlacaRenavam">
+                        <div class="form-group" id="grupoPlaca">
+                            <label>Placa</label>
+                            <input type="text" id="placaVeiculo" placeholder="Ex: ABC-1234">
+                        </div>
+                        <div class="form-group" id="grupoRenavam">
+                            <label>Renavam</label>
+                            <input type="text" inputmode="numeric" id="renavamVeiculo" placeholder="Números (pontos e hífen permitidos)">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Modelo/Marca</label>
+                            <input type="text" id="marcaModelo" placeholder="Ex: Gol / VW">
+                        </div>
+                        <div class="form-group">
+                            <label>Cor</label>
+                            <input type="text" id="corVeiculo" placeholder="Ex: Branca">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group hidden" id="grupoVeiculoAtrelado">
+                    <label>Veículo atrelado ao envolvido</label>
+                    <input type="text" id="veiculoAtrelado" placeholder="Informe o veículo tracionador ou relacionado">
+                </div>
+
+                <div id="divDadosCidadao">
+                    <div class="form-group">
+                        <label id="lblCondutor">Condutor</label>
+                        <input type="text" id="nomeCondutor" placeholder="Nome completo">
+                    </div>
+
+                    <div class="form-group">
+                        <label>CPF</label>
+                        <input type="text" inputmode="numeric" id="cpfCondutor" placeholder="Ex: 123.456.789-00">
+                    </div>
+
+                    <div class="row" id="divDadosCNH">
+                        <div class="form-group">
+                            <label>CNH</label>
+                            <input type="text" inputmode="numeric" id="cnhCondutor" placeholder="Números (pontos e hífen permitidos)">
+                        </div>
+                        <div class="form-group">
+                            <label>Categoria</label>
+                            <input type="text" id="catCNH" placeholder="Ex: AB">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Telefone</label>
+                        <input type="tel" id="telefoneCondutor" placeholder="(DD) 99999-9999">
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-gray" onclick="btnVoltarEnvolvido()">Voltar</button>
+                <button class="btn btn-primary" onclick="btnAvancarEnvolvido()">Avançar</button>
+            </div>
+        </div>
+
+        <div id="screen-pergunta" class="screen">
+            <div class="card question-box">
+                <div class="section-badge">Confirmação</div>
+                <h2>Deseja adicionar mais um envolvido a este boletim?</h2>
+                <p>Você pode continuar criando novas abas de envolvidos ou seguir para as observações gerais da ocorrência.</p>
+                <div class="btn-row">
+                    <button class="btn btn-success" onclick="btnSimPergunta()">Sim, adicionar</button>
+                    <button class="btn btn-primary" onclick="btnNaoPergunta()">Não, continuar</button>
+                </div>
+                <button class="btn btn-gray" style="margin-top: 14px;" onclick="btnVoltarPergunta()">Voltar ao anterior</button>
+            </div>
+        </div>
+
+        <div id="screen-obs" class="screen">
+            <div class="card">
+                <div class="top-note">
+                    <div class="section-badge">Etapa 3</div>
+                    <div class="subtext">Descreva os detalhes complementares da ocorrência.</div>
+                </div>
+                <h2>📝 Observações Gerais</h2>
+                <div class="form-group">
+                    <label>Relate a dinâmica, avarias gerais, socorro de vítimas, entre outros detalhes</label>
+                    <textarea id="obsGeral" placeholder="Digite as observações gerais aqui..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Fotos do Sinistro (anexadas ao PDF)</label>
+                    <div class="foto-upload">
+                        <label for="inputCamera" class="btn-foto">📷 Tirar Foto</label>
+                        <input id="inputCamera" type="file" accept="image/*" capture="environment" onchange="adicionarFotos(this.files); this.value=''">
+                        <label for="inputGaleria" class="btn-foto">🖼️ Da Galeria</label>
+                        <input id="inputGaleria" type="file" accept="image/*" multiple onchange="adicionarFotos(this.files); this.value=''">
+                    </div>
+                    <div class="fotos-grid" id="fotosGrid"></div>
+                    <div class="fotos-status" id="fotosStatus"></div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-gray" onclick="btnVoltarObs()">Voltar</button>
+                <button class="btn btn-danger" onclick="cancelarBO()">Cancelar B.O</button>
+                <button class="btn btn-success" onclick="btnGerarBO()">Gerar B.O Final</button>
+            </div>
+        </div>
+
+        <div id="screen-resumo" class="screen">
+            <div class="card">
+                <div class="top-note">
+                    <div class="section-badge">Finalização</div>
+                    <div class="subtext">Confira o texto do boletim antes de salvar.</div>
+                </div>
+                <h2>📄 Boletim Gerado</h2>
+                <div class="boletim-impresso" id="boletimTexto"></div>
+                <div class="btn-row" style="margin-bottom: 12px;">
+                    <button class="btn btn-whatsapp" onclick="compartilharWhatsAppAtual()">Compartilhar no WhatsApp</button>
+                    <button class="btn btn-success" onclick="compartilharPDFAtual()">📄 Compartilhar PDF</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-gray" onclick="btnRetificar()">Retificar</button>
+                    <button class="btn btn-primary" onclick="salvarBOEVoltar()">Salvar B.O e Voltar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-historico" class="screen">
+            <div class="card">
+                <div class="top-note">
+                    <div class="section-badge">Histórico</div>
+                    <div class="subtext">Consulte, visualize, edite ou compartilhe ocorrências salvas.</div>
+                </div>
+                <h2>📚 Ocorrências Salvas</h2>
+                <div id="listaHistorico"></div>
+            </div>
+            <button class="btn btn-primary" onclick="mostrarTela('screen-home')">Voltar ao início</button>
+        </div>
+    </div>
+
+    <script>
+        let boletim = criarBoletimVazio();
+        let currentEnvolvidoIndex = 0;
+
+        function criarBoletimVazio() {
+            return {
+                id: null,
+                data: '',
+                hora: '',
+                tipoSinistro: '',
+                comVitima: '',
+                local: '',
+                agentes: '',
+                obsGeral: '',
+                envolvidos: [],
+                fotos: []
+            };
+        }
+
+        function criarEnvolvidoPadrao(id) {
+            return {
+                id: id,
+                tipo: 'Veículo',
+                placa: '',
+                renavam: '',
+                marca: '',
+                cor: '',
+                nome: '',
+                cpf: '',
+                cnh: '',
+                categoria: '',
+                telefone: '',
+                veiculoAtrelado: ''
+            };
+        }
+
+        window.onload = function() {
+            prepararNovoBoletim();
+            mostrarTela('screen-home');
+        };
+
+        function mostrarTela(idTela) {
+            document.querySelectorAll('.screen').forEach(tela => tela.classList.remove('active'));
+            document.getElementById(idTela).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function prepararNovoBoletim() {
+            boletim = criarBoletimVazio();
+            boletim.envolvidos = [criarEnvolvidoPadrao(1)];
+            currentEnvolvidoIndex = 0;
+            document.getElementById('dataSinistro').valueAsDate = new Date();
+            document.getElementById('horaSinistro').value = '';
+            document.getElementById('tipoSinistro').value = '';
+            document.getElementById('localSinistro').value = '';
+            document.getElementById('agentesSinistro').value = '';
+            document.getElementById('obsGeral').value = '';
+            document.querySelectorAll('input[name="comVitima"]').forEach(r => r.checked = false);
+            if (!boletim.fotos) boletim.fotos = [];
+            renderizarFotos();
+        }
+
+        function iniciarNovoBO() {
+            prepararNovoBoletim();
+            mostrarTela('screen-geral');
+        }
+
+        function abrirHistorico() {
+            carregarListaHistorico();
+            mostrarTela('screen-historico');
+        }
+
+        function btnAvancarGeral() {
+            boletim.data = document.getElementById('dataSinistro').value;
+            boletim.hora = document.getElementById('horaSinistro').value;
+            boletim.tipoSinistro = document.getElementById('tipoSinistro').value;
+            boletim.local = document.getElementById('localSinistro').value;
+            boletim.agentes = document.getElementById('agentesSinistro').value;
+            const vitimaSel = document.querySelector('input[name="comVitima"]:checked');
+            boletim.comVitima = vitimaSel ? vitimaSel.value : '';
+
+            if (!boletim.local) {
+                alert('O campo Local é obrigatório!');
+                return;
+            }
+
+            if (!boletim.tipoSinistro) {
+                alert('Selecione o tipo de sinistro!');
+                return;
+            }
+
+            if (!boletim.comVitima) {
+                alert('Informe se o sinistro foi com ou sem vítima!');
+                return;
+            }
+
+            if (!boletim.envolvidos.length) {
+                boletim.envolvidos.push(criarEnvolvidoPadrao(1));
+            }
+
+            currentEnvolvidoIndex = 0;
+            carregarDadosEnvolvido(currentEnvolvidoIndex);
+            mostrarTela('screen-envolvido');
+        }
+
+        function tipoSemPlacaRenavam(tipo) {
+            return tipo === 'Autopropelido';
+        }
+
+        function tipoSemCidadao(tipo) {
+            return tipo === 'Reboque' || tipo === 'Semi-reboque';
+        }
+
+        function tipoSemCNH(tipo) {
+            return tipo === 'Ciclista' || tipo === 'Pedestre' || tipo === 'Autopropelido' || tipoSemCidadao(tipo);
+        }
+
+        function verificarTipo() {
+            const tipo = document.getElementById('tipoEnvolvido').value;
+            const divVeiculo = document.getElementById('divDadosVeiculo');
+            const grupoPlaca = document.getElementById('grupoPlaca');
+            const grupoRenavam = document.getElementById('grupoRenavam');
+            const divCNH = document.getElementById('divDadosCNH');
+            const lblCondutor = document.getElementById('lblCondutor');
+            const divDadosCidadao = document.getElementById('divDadosCidadao');
+            const grupoVeiculoAtrelado = document.getElementById('grupoVeiculoAtrelado');
+
+            divVeiculo.style.display = (tipo === 'Pedestre') ? 'none' : 'block';
+            grupoPlaca.classList.toggle('hidden', tipoSemPlacaRenavam(tipo));
+            grupoRenavam.classList.toggle('hidden', tipoSemPlacaRenavam(tipo));
+            divCNH.style.display = tipoSemCNH(tipo) ? 'none' : 'grid';
+            divDadosCidadao.style.display = tipoSemCidadao(tipo) ? 'none' : 'block';
+            grupoVeiculoAtrelado.classList.toggle('hidden', !tipoSemCidadao(tipo));
+
+            if (tipo === 'Pedestre' || tipo === 'Ciclista') {
+                lblCondutor.innerText = 'Nome / Vítima';
+            } else if (tipo === 'Autopropelido') {
+                lblCondutor.innerText = 'Responsável';
+            } else {
+                lblCondutor.innerText = 'Condutor';
+            }
+        }
+
+        function renderizarTabsEnvolvidos() {
+            const tabs = document.getElementById('tabsEnvolvidos');
+            tabs.innerHTML = '';
+
+            boletim.envolvidos.forEach((env, index) => {
+                const tab = document.createElement('div');
+                tab.className = 'tab-envolvido';
+
+                const btnTab = document.createElement('button');
+                btnTab.className = 'tab-link' + (index === currentEnvolvidoIndex ? ' active' : '');
+                btnTab.textContent = 'Envolvido ' + (index + 1);
+                btnTab.onclick = function() { trocarParaEnvolvido(index); };
+                tab.appendChild(btnTab);
+
+                if (boletim.envolvidos.length > 1) {
+                    const btnClose = document.createElement('button');
+                    btnClose.className = 'tab-close';
+                    btnClose.type = 'button';
+                    btnClose.title = 'Excluir envolvido';
+                    btnClose.innerHTML = '✕';
+                    btnClose.onclick = function(event) {
+                        event.stopPropagation();
+                        excluirEnvolvido(index);
+                    };
+                    tab.appendChild(btnClose);
+                }
+
+                tabs.appendChild(tab);
+            });
+        }
+
+        function renumerarEnvolvidos() {
+            boletim.envolvidos.forEach((env, index) => env.id = index + 1);
+        }
+
+        function trocarParaEnvolvido(index) {
+            salvarFormNoObjeto(currentEnvolvidoIndex);
+            currentEnvolvidoIndex = index;
+            carregarDadosEnvolvido(index);
+        }
+
+        function excluirEnvolvido(index) {
+            if (boletim.envolvidos.length === 1) {
+                alert('É necessário manter pelo menos um envolvido no boletim.');
+                return;
+            }
+
+            if (confirm('Confirma que deseja excluir este envolvido?')) {
+                salvarFormNoObjeto(currentEnvolvidoIndex);
+                boletim.envolvidos.splice(index, 1);
+                renumerarEnvolvidos();
+
+                if (currentEnvolvidoIndex >= boletim.envolvidos.length) {
+                    currentEnvolvidoIndex = boletim.envolvidos.length - 1;
+                } else if (index < currentEnvolvidoIndex) {
+                    currentEnvolvidoIndex--;
+                }
+
+                carregarDadosEnvolvido(currentEnvolvidoIndex);
+            }
+        }
+
+        function carregarDadosEnvolvido(index) {
+            if (!boletim.envolvidos[index]) {
+                boletim.envolvidos[index] = criarEnvolvidoPadrao(index + 1);
+            }
+
+            const env = boletim.envolvidos[index];
+            document.getElementById('tituloEnvolvido').innerText = 'ENVOLVIDO ' + (index + 1);
+            document.getElementById('tipoEnvolvido').value = env.tipo || 'Veículo';
+            document.getElementById('placaVeiculo').value = env.placa || '';
+            document.getElementById('renavamVeiculo').value = env.renavam || '';
+            document.getElementById('marcaModelo').value = env.marca || '';
+            document.getElementById('corVeiculo').value = env.cor || '';
+            document.getElementById('nomeCondutor').value = env.nome || '';
+            document.getElementById('cpfCondutor').value = env.cpf || '';
+            document.getElementById('cnhCondutor').value = env.cnh || '';
+            document.getElementById('catCNH').value = env.categoria || '';
+            document.getElementById('telefoneCondutor').value = env.telefone || '';
+            document.getElementById('veiculoAtrelado').value = env.veiculoAtrelado || '';
+            renderizarTabsEnvolvidos();
+            verificarTipo();
+        }
+
+        function salvarFormNoObjeto(index) {
+            if (index < 0 || !boletim.envolvidos[index]) return;
+            boletim.envolvidos[index] = {
+                id: index + 1,
+                tipo: document.getElementById('tipoEnvolvido').value,
+                placa: document.getElementById('placaVeiculo').value.toUpperCase(),
+                renavam: document.getElementById('renavamVeiculo').value,
+                marca: document.getElementById('marcaModelo').value.toUpperCase(),
+                cor: document.getElementById('corVeiculo').value.toUpperCase(),
+                nome: document.getElementById('nomeCondutor').value.toUpperCase(),
+                cpf: document.getElementById('cpfCondutor').value,
+                cnh: document.getElementById('cnhCondutor').value,
+                categoria: document.getElementById('catCNH').value.toUpperCase(),
+                telefone: document.getElementById('telefoneCondutor').value,
+                veiculoAtrelado: document.getElementById('veiculoAtrelado').value.toUpperCase()
+            };
+        }
+
+        function btnVoltarEnvolvido() {
+            salvarFormNoObjeto(currentEnvolvidoIndex);
+            mostrarTela('screen-geral');
+        }
+
+        function btnAvancarEnvolvido() {
+            salvarFormNoObjeto(currentEnvolvidoIndex);
+            mostrarTela('screen-pergunta');
+        }
+
+        function btnVoltarPergunta() {
+            carregarDadosEnvolvido(currentEnvolvidoIndex);
+            mostrarTela('screen-envolvido');
+        }
+
+        function btnSimPergunta() {
+            salvarFormNoObjeto(currentEnvolvidoIndex);
+            boletim.envolvidos.push(criarEnvolvidoPadrao(boletim.envolvidos.length + 1));
+            currentEnvolvidoIndex = boletim.envolvidos.length - 1;
+            carregarDadosEnvolvido(currentEnvolvidoIndex);
+            mostrarTela('screen-envolvido');
+        }
+
+        function btnNaoPergunta() {
+            document.getElementById('obsGeral').value = boletim.obsGeral || '';
+            renderizarFotos();
+            mostrarTela('screen-obs');
+        }
+
+        function btnVoltarObs() {
+            boletim.obsGeral = document.getElementById('obsGeral').value;
+            mostrarTela('screen-pergunta');
+        }
+
+        function cancelarBO() {
+            if (confirm('Deseja cancelar este B.O.? Os dados não salvos serão perdidos.')) {
+                prepararNovoBoletim();
+                mostrarTela('screen-home');
+            }
+        }
+
+        function formatarData(data) {
+            if (data && data.includes('-')) {
+                const p = data.split('-');
+                return p[2] + '/' + p[1] + '/' + p[0];
+            }
+            return data || '';
+        }
+
+        function gerarTextoBoletim() {
+            const dataFormatada = formatarData(boletim.data);
+            let texto = '*BOLETIM DE SINISTRO DE TRÂNSITO*\n\n';
+            texto += '*Data:* ' + dataFormatada + '    *Hora:* ' + (boletim.hora || '') + '\n';
+            texto += '*Tipo de Sinistro:* ' + (boletim.tipoSinistro || '') + '\n';
+            const vitimaTxt = boletim.comVitima === 'sim' ? 'COM VÍTIMA' : (boletim.comVitima === 'nao' ? 'SEM VÍTIMA' : '');
+            if (vitimaTxt) texto += '*Situação:* ' + vitimaTxt + '\n';
+            texto += '*Local:* ' + (boletim.local || '') + '\n\n';
+
+            boletim.envolvidos.forEach((e) => {
+                texto += '*' + e.tipo.toUpperCase() + ' ' + e.id + '*\n';
+
+                if (e.tipo !== 'Pedestre' && e.tipo !== 'Ciclista') {
+                    if (!tipoSemPlacaRenavam(e.tipo)) {
+                        texto += 'PLACA: ' + (e.placa || 'NÃO INFORMADA') + '\n';
+                        texto += 'RENAVAM: ' + (e.renavam || 'NÃO INFORMADO') + '\n';
+                    }
+                    texto += 'MODELO/MARCA: ' + (e.marca || 'NÃO INFORMADO') + '\n';
+                    texto += 'COR: ' + (e.cor || 'NÃO INFORMADA') + '\n';
+                }
+
+                if (tipoSemCidadao(e.tipo)) {
+                    texto += 'VEÍCULO ATRELADO: ' + (e.veiculoAtrelado || 'NÃO INFORMADO') + '\n';
+                } else {
+                    texto += 'NOME: ' + (e.nome || 'NÃO IDENTIFICADO') + '\n';
+                    texto += 'CPF: ' + (e.cpf || 'NÃO INFORMADO') + '\n';
+                    if (!tipoSemCNH(e.tipo)) {
+                        texto += 'CNH: ' + (e.cnh || 'NÃO INFORMADA') + '\n';
+                        texto += 'CATEGORIA: ' + (e.categoria || 'NÃO INFORMADA') + '\n';
+                    }
+                    texto += 'TELEFONE: ' + (e.telefone || 'NÃO INFORMADO') + '\n';
+                }
+                texto += '----------------------------------------\n\n';
+            });
+
+            texto += '*Observação:*\n' + (boletim.obsGeral || '') + '\n\n';
+            texto += '*Agentes:* ' + (boletim.agentes || 'NÃO INFORMADO') + '\n';
+            return texto;
+        }
+
+        function btnGerarBO() {
+            salvarFormNoObjeto(currentEnvolvidoIndex);
+            boletim.obsGeral = document.getElementById('obsGeral').value;
+            document.getElementById('boletimTexto').innerText = gerarTextoBoletim();
+            renderizarFotosResumo();
+            mostrarTela('screen-resumo');
+        }
+
+        function btnRetificar() {
+            mostrarTela('screen-obs');
+        }
+
+        function compartilharWhatsAppAtual() {
+            const texto = document.getElementById('boletimTexto').innerText;
+            const textoCodificado = encodeURIComponent(texto);
+            window.open('https://wa.me/?text=' + textoCodificado, '_blank');
+        }
+
+        function salvarBOEVoltar() {
+            const textoFinal = gerarTextoBoletim();
+            document.getElementById('boletimTexto').innerText = textoFinal;
+            salvarNoHistorico(textoFinal);
+            alert('B.O salvo com sucesso!');
+            prepararNovoBoletim();
+            mostrarTela('screen-home');
+        }
+
+        function salvarNoHistorico(textoGerado) {
+            const historico = JSON.parse(localStorage.getItem('boletosTransito')) || [];
+
+            if (!boletim.id) {
+                boletim.id = Date.now();
+                historico.unshift({
+                    id: boletim.id,
+                    data: boletim.data,
+                    hora: boletim.hora,
+                    local: boletim.local,
+                    tipoSinistro: boletim.tipoSinistro,
+                    obj: JSON.stringify(boletim),
+                    texto: textoGerado
+                });
+            } else {
+                const index = historico.findIndex(b => b.id === boletim.id);
+                if (index > -1) {
+                    historico[index].data = boletim.data;
+                    historico[index].hora = boletim.hora;
+                    historico[index].local = boletim.local;
+                    historico[index].tipoSinistro = boletim.tipoSinistro;
+                    historico[index].obj = JSON.stringify(boletim);
+                    historico[index].texto = textoGerado;
+                }
+            }
+
+            localStorage.setItem('boletosTransito', JSON.stringify(historico));
+        }
+
+        function carregarListaHistorico() {
+            const historico = JSON.parse(localStorage.getItem('boletosTransito')) || [];
+            const divLista = document.getElementById('listaHistorico');
+            divLista.innerHTML = '';
+
+            if (historico.length === 0) {
+                divLista.innerHTML = '<p class="subtext">Nenhuma ocorrência salva.</p>';
+                return;
+            }
+
+            historico.forEach((bo) => {
+                const txtCod = encodeURIComponent(bo.texto);
+                divLista.innerHTML += `
+                    <div class="historico-item">
+                        <div class="historico-data">📅 ${formatarData(bo.data)} às ${bo.hora || ''}</div>
+                        <div class="historico-local">📍 ${bo.local} | ${bo.tipoSinistro || 'Tipo não informado'}</div>
+                        <div class="action-row">
+                            <button class="btn btn-outline btn-small" onclick="visualizarBO(${bo.id})">Visualizar B.O</button>
+                            <button class="btn btn-whatsapp btn-small" onclick="window.open('https://wa.me/?text=${txtCod}', '_blank')">WhatsApp</button>
+                            <button class="btn btn-success btn-small" onclick="compartilharPDFHistorico(${bo.id})">PDF</button>
+                            <button class="btn btn-primary btn-small" onclick="carregarParaEdicao(${bo.id})">Retificar</button>
+                            <button class="btn btn-danger btn-small" onclick="apagarBO(${bo.id})">Apagar</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function carregarParaEdicao(id) {
+            const historico = JSON.parse(localStorage.getItem('boletosTransito')) || [];
+            const item = historico.find(b => b.id === id);
+            if (item) {
+                boletim = JSON.parse(item.obj);
+                if (!boletim.envolvidos || !boletim.envolvidos.length) {
+                    boletim.envolvidos = [criarEnvolvidoPadrao(1)];
+                }
+                if (!boletim.fotos) boletim.fotos = [];
+                renumerarEnvolvidos();
+                currentEnvolvidoIndex = 0;
+                document.getElementById('dataSinistro').value = boletim.data || '';
+                document.getElementById('horaSinistro').value = boletim.hora || '';
+                document.getElementById('tipoSinistro').value = boletim.tipoSinistro || '';
+                document.getElementById('localSinistro').value = boletim.local || '';
+                document.getElementById('agentesSinistro').value = boletim.agentes || '';
+                document.getElementById('obsGeral').value = boletim.obsGeral || '';
+                document.querySelectorAll('input[name="comVitima"]').forEach(r => r.checked = (r.value === boletim.comVitima));
+                renderizarFotos();
+                mostrarTela('screen-geral');
+            }
+        }
+
+        function visualizarBO(id) {
+            const historico = JSON.parse(localStorage.getItem('boletosTransito')) || [];
+            const item = historico.find(b => b.id === id);
+            if (item) {
+                boletim = JSON.parse(item.obj);
+                if (!boletim.fotos) boletim.fotos = [];
+                document.getElementById('boletimTexto').innerText = item.texto;
+                renderizarFotosResumo();
+                mostrarTela('screen-resumo');
+            }
+        }
+
+        /* ============================================================
+           GPS → ENDEREÇO AUTO
+           Usa Geolocation API + Nominatim (OpenStreetMap) para
+           reverse geocoding gratuito.
+           ============================================================ */
+        function setGpsStatus(msg, tipo) {
+            const el = document.getElementById('gpsStatus');
+            el.className = 'gps-status' + (tipo ? ' ' + tipo : '');
+            el.innerText = msg || '';
+        }
+
+        async function preencherEnderecoGPS() {
+            const btn = document.getElementById('btnGPS');
+            const input = document.getElementById('localSinistro');
+
+            if (!('geolocation' in navigator)) {
+                setGpsStatus('GPS não suportado neste dispositivo.', 'erro');
+                return;
+            }
+
+            btn.disabled = true;
+            setGpsStatus('Obtendo localização...');
+
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0
+                    });
+                });
+                const { latitude, longitude } = pos.coords;
+                setGpsStatus(`Buscando endereço (precisão ~${Math.round(pos.coords.accuracy)}m)...`);
+
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=pt-BR&zoom=18&addressdetails=1`;
+                const resp = await fetch(url, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const data = await resp.json();
+
+                const endereco = montarEndereco(data) || data.display_name || '';
+                if (!endereco) {
+                    setGpsStatus('Endereço não encontrado para esta localização.', 'erro');
+                    return;
+                }
+                input.value = endereco;
+                setGpsStatus('Endereço preenchido com sucesso.', 'ok');
+            } catch (err) {
+                console.error(err);
+                if (err.code === 1) {
+                    setGpsStatus('Permissão de localização negada. Habilite no menu do app.', 'erro');
+                } else if (err.code === 2) {
+                    setGpsStatus('Localização indisponível. Verifique se o GPS está ligado.', 'erro');
+                } else if (err.code === 3) {
+                    setGpsStatus('Tempo esgotado. Tente novamente ao ar livre.', 'erro');
+                } else {
+                    setGpsStatus('Falha ao buscar endereço: ' + (err.message || err), 'erro');
+                }
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function montarEndereco(data) {
+            if (!data || !data.address) return '';
+            const a = data.address;
+            const rua = a.road || a.pedestrian || a.cycleway || a.footway || a.path || '';
+            const numero = a.house_number ? ', ' + a.house_number : '';
+            const bairro = a.suburb || a.neighbourhood || a.village || a.hamlet || '';
+            const cidade = a.city || a.town || a.municipality || a.county || '';
+            const estado = a.state || '';
+            const partes = [];
+            if (rua) partes.push(rua + numero);
+            if (bairro) partes.push(bairro);
+            if (cidade) partes.push(cidade);
+            if (estado) partes.push(estado);
+            return partes.join(', ');
+        }
+
+        function apagarBO(id) {
+            if (confirm('Apagar esta ocorrência permanentemente?')) {
+                let historico = JSON.parse(localStorage.getItem('boletosTransito')) || [];
+                historico = historico.filter(b => b.id !== id);
+                localStorage.setItem('boletosTransito', JSON.stringify(historico));
+                carregarListaHistorico();
+            }
+        }
+
+        /* ============================================================
+           FOTOS — captura, compressão e renderização
+           ============================================================ */
+        const MAX_FOTOS = 10;
+        const MAX_LADO = 1280;     // pixel máximo no maior lado
+        const QUALIDADE = 0.75;    // qualidade JPEG
+
+        async function adicionarFotos(fileList) {
+            if (!fileList || !fileList.length) return;
+            if (!boletim.fotos) boletim.fotos = [];
+            const status = document.getElementById('fotosStatus');
+            status.innerText = 'Processando imagens...';
+            for (const file of fileList) {
+                if (boletim.fotos.length >= MAX_FOTOS) {
+                    status.innerText = `Limite de ${MAX_FOTOS} fotos atingido.`;
+                    break;
+                }
+                try {
+                    const dataUrl = await comprimirImagem(file);
+                    boletim.fotos.push(dataUrl);
+                } catch (e) {
+                    console.error('Falha ao processar foto:', e);
+                }
+            }
+            renderizarFotos();
+            status.innerText = `${boletim.fotos.length} foto(s) anexada(s).`;
+        }
+
+        function comprimirImagem(file) {
+            return new Promise((resolve, reject) => {
+                if (!file.type.startsWith('image/')) {
+                    reject(new Error('Arquivo não é imagem'));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let { width, height } = img;
+                        if (width > height && width > MAX_LADO) {
+                            height = Math.round(height * MAX_LADO / width);
+                            width = MAX_LADO;
+                        } else if (height >= width && height > MAX_LADO) {
+                            width = Math.round(width * MAX_LADO / height);
+                            height = MAX_LADO;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', QUALIDADE));
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderizarFotos() {
+            const grid = document.getElementById('fotosGrid');
+            if (!grid) return;
+            const fotos = boletim.fotos || [];
+            grid.innerHTML = '';
+            fotos.forEach((src, idx) => {
+                const div = document.createElement('div');
+                div.className = 'foto-item';
+                div.innerHTML = `
+                    <img src="${src}" alt="Foto ${idx+1}">
+                    <button type="button" class="btn-remover-foto" onclick="removerFoto(${idx})" title="Remover">✕</button>
+                `;
+                grid.appendChild(div);
+            });
+            const status = document.getElementById('fotosStatus');
+            if (status && fotos.length === 0) status.innerText = '';
+        }
+
+        function removerFoto(index) {
+            if (!boletim.fotos) return;
+            boletim.fotos.splice(index, 1);
+            renderizarFotos();
+            const status = document.getElementById('fotosStatus');
+            if (status) status.innerText = `${boletim.fotos.length} foto(s) anexada(s).`;
+        }
+
+        function renderizarFotosResumo() {
+            const container = document.getElementById('boletimTexto');
+            const previaAntiga = document.getElementById('fotosResumoGrid');
+            if (previaAntiga) previaAntiga.remove();
+            const fotos = boletim.fotos || [];
+            if (!fotos.length) return;
+            const grid = document.createElement('div');
+            grid.id = 'fotosResumoGrid';
+            grid.className = 'fotos-grid';
+            grid.style.marginTop = '12px';
+            fotos.forEach((src, idx) => {
+                const div = document.createElement('div');
+                div.className = 'foto-item';
+                div.innerHTML = `<img src="${src}" alt="Foto ${idx+1}">`;
+                grid.appendChild(div);
+            });
+            container.parentNode.insertBefore(grid, container.nextSibling);
+        }
+
+        function carregarImagem(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        /* ============================================================
+           EXPORTAÇÃO PDF — compatível com WebView (APK)
+           ============================================================ */
+        function textoParaPDF(texto) {
+            return (texto || '').replace(/\*/g, '');
+        }
+
+        function nomeArquivoPDF(bo) {
+            const d = (bo.data || '').replace(/-/g, '');
+            const h = (bo.hora || '').replace(/:/g, '');
+            let nome = `BO_${d || 'sinistro'}`;
+            if (h) nome += `_${h}`;
+            return nome + '.pdf';
+        }
+
+        async function gerarPDFBlob(textoBoletim, boInfo, fotos) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            const margin = 40;
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const maxW = pageW - margin * 2;
+            let y = margin;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text('BOLETIM DE SINISTRO DE TRÂNSITO', pageW / 2, y, { align: 'center' });
+            y += 18;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            const dataFmt = formatarData(boInfo.data || '');
+            const subtitulo = `${dataFmt} · ${boInfo.hora || ''} · ${boInfo.local || ''}`;
+            const subLinhas = doc.splitTextToSize(subtitulo, maxW);
+            subLinhas.forEach(l => { doc.text(l, pageW / 2, y, { align: 'center' }); y += 12; });
+            y += 4;
+            doc.setLineWidth(1);
+            doc.line(margin, y, pageW - margin, y);
+            y += 14;
+
+            doc.setFont('courier', 'normal');
+            doc.setFontSize(10);
+            const linhas = doc.splitTextToSize(textoParaPDF(textoBoletim), maxW);
+            for (const linha of linhas) {
+                if (y > pageH - margin) { doc.addPage(); y = margin; }
+                doc.text(linha, margin, y);
+                y += 12;
+            }
+
+            // Fotos — cada uma em página própria
+            const lista = fotos || [];
+            for (let i = 0; i < lista.length; i++) {
+                try {
+                    const img = await carregarImagem(lista[i]);
+                    doc.addPage();
+                    let yy = margin;
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(12);
+                    doc.text(`Foto ${i + 1} de ${lista.length}`, pageW / 2, yy, { align: 'center' });
+                    yy += 18;
+                    const ratio = img.width / img.height;
+                    let w = maxW;
+                    let h = w / ratio;
+                    const maxH = pageH - yy - margin;
+                    if (h > maxH) { h = maxH; w = h * ratio; }
+                    const x = (pageW - w) / 2;
+                    doc.addImage(lista[i], 'JPEG', x, yy, w, h);
+                } catch (e) {
+                    console.warn('Não foi possível incluir foto', i + 1, e);
+                }
+            }
+
+            return { blob: doc.output('blob'), dataUrl: doc.output('datauristring') };
+        }
+
+        async function compartilharPDF(textoBoletim, boInfo, fotos) {
+            if (typeof window.jspdf === 'undefined') {
+                alert('Biblioteca de PDF não carregou. Verifique a conexão.');
+                return;
+            }
+            let pdf;
+            try {
+                pdf = await gerarPDFBlob(textoBoletim, boInfo, fotos);
+            } catch (e) {
+                console.error(e);
+                alert('Erro ao gerar o PDF: ' + e.message);
+                return;
+            }
+            const fileName = nomeArquivoPDF(boInfo);
+            try {
+                const file = new File([pdf.blob], fileName, { type: 'application/pdf' });
+                if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+                    await navigator.share({ files: [file], title: 'Boletim de Sinistro', text: 'Boletim de Sinistro em PDF' });
+                    return;
+                }
+            } catch (e) {
+                console.warn('navigator.share(files) falhou:', e);
+            }
+            try {
+                const win = window.open(pdf.dataUrl, '_blank');
+                if (!win) location.href = pdf.dataUrl;
+            } catch (e) {
+                alert('Não foi possível abrir o PDF.');
+            }
+        }
+
+        function compartilharPDFAtual() {
+            const texto = document.getElementById('boletimTexto').innerText || gerarTextoBoletim();
+            compartilharPDF(texto, boletim, boletim.fotos || []);
+        }
+
+        function compartilharPDFHistorico(id) {
+            const historico = JSON.parse(localStorage.getItem('boletosTransito')) || [];
+            const item = historico.find(b => b.id === id);
+            if (!item) return;
+            const boInfo = { data: item.data, hora: item.hora, local: item.local, tipoSinistro: item.tipoSinistro };
+            let fotos = [];
+            try { fotos = (JSON.parse(item.obj || '{}').fotos) || []; } catch (e) {}
+            compartilharPDF(item.texto, boInfo, fotos);
+        }
+    </script>
+</body>
+</html>
