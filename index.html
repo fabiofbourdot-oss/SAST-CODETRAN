@@ -601,6 +601,9 @@
             .action-row .btn-small { width: 100%; }
         }
     </style>
+
+<link rel="manifest" href="manifest_pwa.json">
+<meta name="theme-color" content="#123a63">
 </head>
 <body>
     <div class="header">
@@ -1639,5 +1642,14 @@
             compartilharPDF(item.texto, boInfo, fotos);
         }
     </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw_pwa.js');
+    });
+}
+</script>
+
 </body>
 </html>
